@@ -1,0 +1,76 @@
+name: Gold18 Signal Bot
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+    inputs:
+      chat_id:
+        description: 'ارسال به کاربر خاص (Chat ID)'
+        required: false
+        default: ''
+        type: string
+      force_run:
+        description: 'اجرای اجباری حتی با داده ناقص'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: gold18-signal-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUNBUFFERED: 1
+      TZ: Asia/Tehran
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create data directory
+        run: mkdir -p gold18_bot/data
+
+      - name: Run gold18 signal bot
+        working-directory: gold18_bot
+        env:
+          GOLD18_TELEGRAM_TOKEN: ${{ secrets.GOLD18_TELEGRAM_TOKEN }}
+          GOLD18_TELEGRAM_CHAT_ID: ${{ secrets.GOLD18_TELEGRAM_CHAT_ID }}
+          GOLD18_BALE_TOKEN: ${{ secrets.GOLD18_BALE_TOKEN }}
+          GOLD18_BALE_CHAT_ID: ${{ secrets.GOLD18_BALE_CHAT_ID }}
+          MANUAL_CHAT_ID: ${{ github.event.inputs.chat_id }}
+          FORCE_RUN: ${{ github.event.inputs.force_run }}
+        run: python main.py
+
+      - name: Commit updated history
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gold18_bot/data/ || true
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "update gold18 history"
+            git push
+          fi
