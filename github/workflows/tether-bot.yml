@@ -1,0 +1,35 @@
+name: Tether Signal Bot
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix DNS for Nobitex
+        run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+          echo "nameserver 1.1.1.1" | sudo tee -a /etc/resolv.conf
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tether signal bot
+        working-directory: tether_bot
+        env:
+          TETHER_BALE_TOKEN: ${{ secrets.TETHER_BALE_TOKEN }}
+          TETHER_BALE_CHAT_ID: ${{ secrets.TETHER_BALE_CHAT_ID }}
+          TETHER_TELEGRAM_TOKEN: ${{ secrets.TETHER_TELEGRAM_TOKEN }}
+          TETHER_TELEGRAM_CHAT_ID: ${{ secrets.TETHER_TELEGRAM_CHAT_ID }}
+        run: python signal_bot.py
