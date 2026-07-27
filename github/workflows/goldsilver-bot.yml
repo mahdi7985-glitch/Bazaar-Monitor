@@ -1,0 +1,33 @@
+name: Gold-Silver Arbitrage Bot
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run bot
+        working-directory: goldsilver_bot
+        env:
+          GOLDSILVER_TELEGRAM_TOKEN: ${{ secrets.GOLDSILVER_TELEGRAM_TOKEN }}
+          GOLDSILVER_BALE_TOKEN: ${{ secrets.GOLDSILVER_BALE_TOKEN }}
+          GOLDSILVER_TELEGRAM_CHAT_ID: ${{ secrets.GOLDSILVER_TELEGRAM_CHAT_ID }}
+          GOLDSILVER_BALE_CHAT_ID: ${{ secrets.GOLDSILVER_BALE_CHAT_ID }}
+        run: python main.py
